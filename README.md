@@ -34,7 +34,7 @@ On debian-based linux distributions:
 
 ```bash
 sudo apt update
-sudo apt install usbmuxd
+sudo apt install usbmuxd make
 sudo usbmuxd &> /dev/null &
 make run-docker-container
 ```
