@@ -2,22 +2,7 @@
 
 ## Before app installation
 
-### 1. Install jailbreak on IOS device with Checkra1n package.
-
-- Firstly tap in bash:
-
-```bash
-wget -O - https://assets.checkra.in/debian/archive.key | gpg --dearmor | sudo tee /usr/share/keyrings/checkra1n.gpg >/dev/null
-echo 'deb [signed-by=/usr/share/keyrings/checkra1n.gpg] https://assets.checkra.in/debian /' | sudo tee /etc/apt/sources.list.d/checkra1n.list
-sudo apt-get update
-sudo apt install checkra1n
-```
-
-- Find Checkra1n app in application launcher and start it.
-- Activate in [ Options ]: [x] Allow untested iOS/iPadOS/tvOS versions; [x] Skip A11 BPR check.
-- Tap [ Start ] and follow the instructions to jailbreak the device.
-
-### 2. Download sber app and put it into ios-apps folder.
+### Download sber app and put it into ios-apps folder.
 
 For example:
 
@@ -35,6 +20,5 @@ On debian-based linux distributions:
 ```bash
 sudo apt update
 sudo apt install usbmuxd make
-sudo usbmuxd &> /dev/null &
 make run-docker-container
 ```

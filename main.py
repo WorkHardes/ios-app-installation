@@ -3,6 +3,8 @@ import pathlib
 import shutil
 import zipfile
 
+from loguru import logger
+from pymobiledevice3 import usbmux
 from pymobiledevice3.exceptions import (
     AlreadyMountedError,
     ConnectionFailedError,
@@ -17,15 +19,26 @@ from pymobiledevice3.services.mobile_image_mounter import MobileImageMounterServ
 import httpx
 
 
+IPA_FOLDER = "./ios-apps"
+IPA_NAME = "sberbank.ipa"
+IPA_PATH = f"{IPA_FOLDER}/{IPA_NAME}"
 DEVELOPER_IOS_IMAGES_PATH = "./xcode_developer_images"
 
 
 async def download_ios_developer_image(lockdown_client: LockdownClient) -> None:
+    folder = pathlib.Path(DEVELOPER_IOS_IMAGES_PATH)
+    if folder.exists() is False:
+        folder.mkdir()
+
     file_name = f"{lockdown_client.ios_version[:4]}.zip"
     folder = pathlib.Path(
         f"{DEVELOPER_IOS_IMAGES_PATH}/{lockdown_client.ios_version[:4]}"
     )
     if folder.exists() is False:
+        logger.info(
+            f"Developer image of IOS '{lockdown_client.ios_version[:4]}' not found. Downloading it"
+        )
+
         url = f"https://github.com/mspvirajpatel/Xcode_Developer_Disk_Images/releases/download/{lockdown_client.ios_version[:4]}/{file_name}"
         async with httpx.AsyncClient() as ac:
             response = await ac.get(url, follow_redirects=True)
@@ -65,7 +78,7 @@ def mount_developer_image(lockdown_client: LockdownClient) -> None:
     try:
         mounter.mount("Developer", signature)
     except AlreadyMountedError as e:
-        raise RuntimeError(repr(e))
+        pass
 
 
 async def install_sber(ios_serial: str, ipa_path: str) -> None:
@@ -87,22 +100,31 @@ async def install_sber(ios_serial: str, ipa_path: str) -> None:
 
     await download_ios_developer_image(lockdown_client)
     try:
+        logger.info("Mounting developer image")
         mount_developer_image(lockdown_client)
     except (ConnectionRefusedError, ConnectionFailedError, OSError) as e:
         raise RuntimeError(repr(e))
 
-    InstallationProxyService(lockdown=lockdown_client).install_from_local(ipa_path)
+    logger.info("Developer image mounted successfully. Trying to install app")
+    try:
+        InstallationProxyService(lockdown=lockdown_client).install_from_local(ipa_path)
+    except OSError as e:
+        logger.error(f"Error: {repr(e)}")
 
 
 async def main() -> None:
-    ios_serial = ""
-    ipa_path = "./ios-apps/sberbank.ipa"
+    ios_devices = [d.serial for d in usbmux.list_devices()]
+    ios_serial = ios_devices[0]
+    logger.info(f"Choose device '{ios_serial}' for app installation")
+    logger.info(f"Choose app path '{IPA_PATH}'")
+
     try:
-        await install_sber(ios_serial, ipa_path)
+        logger.info("Trying to install app")
+        await install_sber(ios_serial, IPA_PATH)
     except FileNotFoundError:
-        print(f"File {ipa_path} not found.\nApp is not installed.")
+        logger.error(f"File {IPA_PATH} not found.\nApp is not installed.")
     except RuntimeError as e:
-        print(
+        logger.error(
             f"Error in connect to device '{ios_serial}'. Check usbmuxd running.\nDetail: {repr(e)}."
         )
 

@@ -7,4 +7,5 @@ __pycache__
 .vscode
 
 # local folders
+/xcode_developer_images
 /ios-apps
